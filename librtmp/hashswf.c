@@ -32,14 +32,14 @@
 
 #ifdef CRYPTO
 #ifdef USE_POLARSSL
-#include <polarssl/sha2.h>
+#include <polarssl/sha256.h>
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH	32
 #endif
-#define HMAC_CTX	sha2_context
-#define HMAC_setup(ctx, key, len)	sha2_hmac_starts(&ctx, (unsigned char *)key, len, 0)
-#define HMAC_crunch(ctx, buf, len)	sha2_hmac_update(&ctx, buf, len)
-#define HMAC_finish(ctx, dig, dlen)	dlen = SHA256_DIGEST_LENGTH; sha2_hmac_finish(&ctx, dig)
+#define HMAC_CTX sha256_context
+#define HMAC_setup(ctx, key, len)	sha256_hmac_starts(&ctx, (unsigned char *)key, len, 0)
+#define HMAC_crunch(ctx, buf, len)	sha256_hmac_update(&ctx, buf, len)
+#define HMAC_finish(ctx, dig, dlen)	dlen = SHA256_DIGEST_LENGTH; sha256_hmac_finish(&ctx, dig)
 #define HMAC_close(ctx)
 #elif defined(USE_GNUTLS)
 #include <nettle/hmac.h>

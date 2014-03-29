@@ -72,7 +72,7 @@ static int MDH_generate_key(MDH *dh)
 static int MDH_compute_key(uint8_t *secret, size_t len, MP_t pub, MDH *dh)
 {
   MP_set(&dh->ctx.GY, pub);
-  dhm_calc_secret(&dh->ctx, secret, &len);
+  dhm_calc_secret(&dh->ctx, secret, &len, NULL, NULL);
   return 0;
 }
 
