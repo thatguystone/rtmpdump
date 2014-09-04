@@ -28,6 +28,9 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#if defined(USE_OPENSSL) && !defined(_WIN32)
+#include <pthread.h>
+#endif
 
 #include "rtmp_sys.h"
 #include "log.h"
@@ -221,6 +224,36 @@ RTMP_LibVersion()
   return RTMP_LIB_VERSION;
 }
 
+#ifdef USE_OPENSSL
+static void
+OpenSSL_Setup()
+{
+  static int initialized = 0;
+
+#ifdef _WIN32
+  #warning FIXME: OpenSSL init is not reentrant
+#else
+  static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+  pthread_mutex_lock(&lock);
+#endif
+
+  if (!initialized) {
+    initialized = 1;
+    SSL_load_error_strings();
+    SSL_library_init();
+    OpenSSL_add_all_digests();
+    RTMP_TLS_ctx = SSL_CTX_new(SSLv23_method());
+    SSL_CTX_set_options(RTMP_TLS_ctx, SSL_OP_ALL);
+    SSL_CTX_set_default_verify_paths(RTMP_TLS_ctx);
+  }
+
+#ifdef _WIN32
+#else
+  pthread_mutex_unlock(&lock);
+#endif
+}
+#endif
+
 void
 RTMP_TLS_Init()
 {
@@ -241,13 +274,7 @@ RTMP_TLS_Init()
   gnutls_certificate_set_x509_trust_file(RTMP_TLS_ctx->cred,
   	"ca.pem", GNUTLS_X509_FMT_PEM);
 #elif !defined(NO_SSL) /* USE_OPENSSL */
-  /* libcrypto doesn't need anything special */
-  SSL_load_error_strings();
-  SSL_library_init();
-  OpenSSL_add_all_digests();
-  RTMP_TLS_ctx = SSL_CTX_new(SSLv23_method());
-  SSL_CTX_set_options(RTMP_TLS_ctx, SSL_OP_ALL);
-  SSL_CTX_set_default_verify_paths(RTMP_TLS_ctx);
+  OpenSSL_Setup();
 #endif
 #endif
 }
