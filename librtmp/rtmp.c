@@ -4209,6 +4209,8 @@ CloseInternal(RTMP *r, int reconnect)
   r->m_resplen = 0;
   r->m_unackd = 0;
 
+  if (r->Link.extras.o_num) AMF_Reset(&r->Link.extras);
+
   if (r->Link.lFlags & RTMP_LF_FTCU && !reconnect)
     {
       free(r->Link.tcUrl.av_val);
