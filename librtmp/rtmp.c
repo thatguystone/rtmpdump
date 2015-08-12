@@ -342,6 +342,7 @@ RTMP_Init(RTMP *r)
   r->m_fVideoCodecs = 252.0;
   r->Link.timeout = 30;
   r->Link.swfAge = 30;
+  r->Link.flashVer = RTMP_DefaultFlashVer;
 }
 
 void
@@ -509,8 +510,6 @@ RTMP_SetupStream(RTMP *r,
     }
   if (flashVer && flashVer->av_len)
     r->Link.flashVer = *flashVer;
-  else
-    r->Link.flashVer = RTMP_DefaultFlashVer;
   if (subscribepath && subscribepath->av_len)
     r->Link.subscribepath = *subscribepath;
   if (usherToken && usherToken->av_len)
