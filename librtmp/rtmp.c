@@ -3641,8 +3641,13 @@ RTMP_ReadPacket(RTMP *r, RTMPPacket *packet)
 
       if (nSize >= 6)
 	{
+	  RTMPPacket *channelPacket = r->m_vecChannelsIn[packet->m_nChannel];
+
 	  packet->m_nBodySize = AMF_DecodeInt24(header + 3);
 	  packet->m_nBytesRead = 0;
+
+	  if (channelPacket && channelPacket->m_body == packet->m_body)
+	    channelPacket->m_body = NULL;
 	  RTMPPacket_Free(packet);
 
 	  if (nSize > 6)
@@ -3709,6 +3714,8 @@ RTMP_ReadPacket(RTMP *r, RTMPPacket *packet)
   /* keep the packet as ref for other packets on this channel */
   if (!r->m_vecChannelsIn[packet->m_nChannel])
     r->m_vecChannelsIn[packet->m_nChannel] = malloc(sizeof(RTMPPacket));
+  else if (r->m_vecChannelsIn[packet->m_nChannel]->m_body != packet->m_body)
+    RTMPPacket_Free(r->m_vecChannelsIn[packet->m_nChannel]);
   memcpy(r->m_vecChannelsIn[packet->m_nChannel], packet, sizeof(RTMPPacket));
   if (extendedTimestamp)
     {
