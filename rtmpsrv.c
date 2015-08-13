@@ -404,10 +404,10 @@ countAMF(AMFObject *obj, int *argc)
 static char *
 dumpAMF(AMFObject *obj, char *ptr, AVal *argv, int *argc)
 {
-  int i, len, ac = *argc;
+  int i, ac = *argc;
   const char opt[] = "NBSO Z";
 
-  for (i=0, len=0; i < obj->o_num; i++)
+  for (i=0; i < obj->o_num; i++)
     {
       AMFObjectProperty *p = &obj->o_props[i];
       argv[ac].av_val = ptr+1;
