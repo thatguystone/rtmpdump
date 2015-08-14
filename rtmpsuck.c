@@ -283,9 +283,6 @@ ServeInvoke(STREAMING_SERVER *server, int which, RTMPPacket *pack, const char *b
               server->rc.m_fEncoding = cobj.o_props[i].p_vu.p_number;
               server->rc.m_bSendEncoding = TRUE;
             }
-          /* Dup'd a string we didn't recognize? */
-          if (pval.av_val)
-            free(pval.av_val);
         }
       if (obj.o_num > 3)
         {
