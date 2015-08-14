@@ -283,9 +283,6 @@ ServeInvoke(STREAMING_SERVER *server, int which, RTMPPacket *pack, const char *b
               server->rc.m_fEncoding = cobj.o_props[i].p_vu.p_number;
               server->rc.m_bSendEncoding = TRUE;
             }
-          /* Dup'd a string we didn't recognize? */
-          if (pval.av_val)
-            free(pval.av_val);
         }
       if (obj.o_num > 3)
         {
@@ -739,6 +736,7 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
   unsigned int buflen = 131072;
   int paused = FALSE;
   int sockfd = server->socket;
+  int connect_cmd_processed = FALSE;
 
   // timeout for http requests
   fd_set rfds;
@@ -776,9 +774,23 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
     {
       if (!RTMPPacket_IsReady(&ps))
         continue;
-      ServePacket(server, 0, &ps);
+      /* Client can set chunk_size before the connect command */
+      if (ps.m_packetType == RTMP_PACKET_TYPE_CHUNK_SIZE)
+        {
+          if (ps.m_nBodySize >= 4)
+            {
+              server->rs.m_inChunkSize = AMF_DecodeInt32(ps.m_body);
+              RTMP_Log(RTMP_LOGDEBUG, "%s, client: chunk size change to %d", __FUNCTION__,
+                       server->rs.m_inChunkSize);
+            }
+        }
+      else
+        {
+          ServePacket(server, 0, &ps);
+          connect_cmd_processed = TRUE;
+        }
       RTMPPacket_Free(&ps);
-      if (RTMP_IsConnected(&server->rc))
+      if (connect_cmd_processed && RTMP_IsConnected(&server->rc))
         break;
     }
 
