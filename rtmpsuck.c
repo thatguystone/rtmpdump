@@ -815,7 +815,7 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
 
 	  if (select(n + 1, &rfds, NULL, NULL, &tv) <= 0)
 	    {
-              if (server->f_cur && server->rc.m_mediaChannel && !paused)
+              if (server->f_cur && server->rc.m_mediaChannel && !paused && RTMP_IsConnected(&server->rc))
                 {
                   server->rc.m_pauseStamp = server->rc.m_channelTimestamp[server->rc.m_mediaChannel];
                   if (RTMP_ToggleStream(&server->rc))
