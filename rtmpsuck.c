@@ -815,7 +815,7 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
 
 	  if (select(n + 1, &rfds, NULL, NULL, &tv) <= 0)
 	    {
-              if (server->f_cur && server->rc.m_mediaChannel && !paused)
+              if (server->f_cur && server->rc.m_mediaChannel && !paused && RTMP_IsConnected(&server->rc))
                 {
                   server->rc.m_pauseStamp = server->rc.m_channelTimestamp[server->rc.m_mediaChannel];
                   if (RTMP_ToggleStream(&server->rc))
@@ -863,16 +863,20 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
                 /* ctrl */
                 else if (ps.m_packetType == RTMP_PACKET_TYPE_CONTROL)
                   {
-                    short nType = AMF_DecodeInt16(ps.m_body);
+                    short nType = -1;
+                    if (ps.m_nBodySize >= 2)
+                      {
+                        nType = AMF_DecodeInt16(ps.m_body);
+                      }
                     /* UpdateBufferMS */
-                    if (nType == 0x03)
+                    if (nType == 0x03 && ps.m_nBodySize >= 6)
                       {
                         char *ptr = ps.m_body+2;
                         int id;
                         int len;
                         id = AMF_DecodeInt32(ptr);
                         /* Assume the interesting media is on a non-zero stream */
-                        if (id)
+                        if (id && ps.m_nBodySize >= 10)
                           {
                             len = AMF_DecodeInt32(ptr+4);
 #if 1
@@ -887,8 +891,8 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
                           }
                       }
                   }
-                else if (ps.m_packetType == RTMP_PACKET_TYPE_FLEX_MESSAGE
-                         || ps.m_packetType == RTMP_PACKET_TYPE_INVOKE)
+                else if ((ps.m_packetType == RTMP_PACKET_TYPE_FLEX_MESSAGE && ps.m_nBodySize >= 2)
+                         || (ps.m_packetType == RTMP_PACKET_TYPE_INVOKE && ps.m_nBodySize))
                   {
                     if (ServePacket(server, 0, &ps) && server->f_cur)
                       {
@@ -929,7 +933,11 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
                     }
                   else if (pc.m_packetType == RTMP_PACKET_TYPE_CONTROL)
                     {
-                      short nType = AMF_DecodeInt16(pc.m_body);
+                      short nType = -1;
+                      if (pc.m_nBodySize >= 2)
+                        {
+                          nType = AMF_DecodeInt16(pc.m_body);
+                        }
                       /* SWFverification */
                       if (nType == 0x1a)
 #ifdef CRYPTO
@@ -954,8 +962,8 @@ TFTYPE doServe(void *arg)	// server socket and state (our listening socket)
                       if (len > 0 && fwrite(buf, 1, len, server->f_cur->f_file) != len)
                         goto cleanup;
                     }
-                  else if (pc.m_packetType == RTMP_PACKET_TYPE_FLEX_MESSAGE ||
-                           pc.m_packetType == RTMP_PACKET_TYPE_INVOKE)
+                  else if ((pc.m_packetType == RTMP_PACKET_TYPE_FLEX_MESSAGE && pc.m_nBodySize >= 2) ||
+                           (pc.m_packetType == RTMP_PACKET_TYPE_INVOKE && pc.m_nBodySize))
                     {
                       if (ServePacket(server, 1, &pc) && server->f_cur)
                         {
