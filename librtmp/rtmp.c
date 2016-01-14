@@ -1320,6 +1320,9 @@ RTMP_ClientPacket(RTMP *r, RTMPPacket *packet)
 	    __FUNCTION__, packet->m_nBodySize);
 	/*RTMP_LogHex(packet.m_body, packet.m_nBodySize); */
 
+        if (packet->m_nBodySize < 2)
+          break;
+
 	/* some DEBUG code */
 #if 0
 	   RTMP_LIB_AMFObject obj;
@@ -1354,6 +1357,9 @@ RTMP_ClientPacket(RTMP *r, RTMPPacket *packet)
       RTMP_Log(RTMP_LOGDEBUG, "%s, received: invoke %u bytes", __FUNCTION__,
 	  packet->m_nBodySize);
       /*RTMP_LogHex(packet.m_body, packet.m_nBodySize); */
+
+      if (!packet->m_nBodySize)
+        break;
 
       if (HandleInvoke(r, packet->m_body, packet->m_nBodySize) == 1)
 	bHasMediaPacket = 2;
@@ -3530,20 +3536,26 @@ HandleCtrl(RTMP *r, const RTMPPacket *packet)
 static void
 HandleServerBW(RTMP *r, const RTMPPacket *packet)
 {
-  r->m_nServerBW = AMF_DecodeInt32(packet->m_body);
-  RTMP_Log(RTMP_LOGDEBUG, "%s: server BW = %d", __FUNCTION__, r->m_nServerBW);
+  if (packet->m_nBodySize >= 4)
+    {
+      r->m_nServerBW = AMF_DecodeInt32(packet->m_body);
+      RTMP_Log(RTMP_LOGDEBUG, "%s: server BW = %d", __FUNCTION__, r->m_nServerBW);
+    }
 }
 
 static void
 HandleClientBW(RTMP *r, const RTMPPacket *packet)
 {
-  r->m_nClientBW = AMF_DecodeInt32(packet->m_body);
-  if (packet->m_nBodySize > 4)
-    r->m_nClientBW2 = packet->m_body[4];
-  else
-    r->m_nClientBW2 = -1;
-  RTMP_Log(RTMP_LOGDEBUG, "%s: client BW = %d %d", __FUNCTION__, r->m_nClientBW,
-      r->m_nClientBW2);
+  if (packet->m_nBodySize >= 4)
+    {
+      r->m_nClientBW = AMF_DecodeInt32(packet->m_body);
+      if (packet->m_nBodySize > 4)
+        r->m_nClientBW2 = packet->m_body[4];
+      else
+        r->m_nClientBW2 = -1;
+      RTMP_Log(RTMP_LOGDEBUG, "%s: client BW = %d %d", __FUNCTION__, r->m_nClientBW,
+          r->m_nClientBW2);
+    }
 }
 
 static int
